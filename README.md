@@ -1,9 +1,6 @@
 # Optimization Models and Algorithms
 Tutorial for [Neurohackademy 2020](https://neurohackademy.org/)
 
-Blahlblhalkadhfl;khf
-
-
 ## Installation
 
 To access the tutorial materials, either download or clone the repository:
