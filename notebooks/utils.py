@@ -3,17 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-def gradient_descent(x0, func, grad, step, tol=1e-6, max_iter=1000):
+def gradient_descent(func, grad, x0, step, tol=1e-6, max_iter=1000):
     """Minimize function with gradient descent.
 
     Parameters
     ----------
-    x0 : array
-        Starting point for solver.
     func : function
         Objective function to minimize.
     grad : function
         Gradient of objective function.
+    x0 : array
+        Starting point for solver.
     step : float
         Step size for gradient step.
     tol : float, optional
@@ -31,9 +31,6 @@ def gradient_descent(x0, func, grad, step, tol=1e-6, max_iter=1000):
         Function values at iterates.
     grad_vals : array
         Norm of gradient at iterates.
-    flag : int
-        0, norm of gradient below `tol`.
-        1, maximum number of iterations reached.
 
     """
     # Initialize return values
@@ -55,10 +52,12 @@ def gradient_descent(x0, func, grad, step, tol=1e-6, max_iter=1000):
 
         # Check convergence
         if grad_vals[ii] < tol:
+            print(f'Norm of gradient below tolerance after {ii} iteration(s).')
             return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
-                   func_vals[:(ii + 1)], grad_vals[:(ii + 1)], 0
+                   func_vals[:(ii + 1)], grad_vals[:(ii + 1)]
 
-    return x_vals[:, -1], x_vals.squeeze(), func_vals, grad_vals, 1
+    print('Maximum number of iterations reached.')
+    return x_vals[:, -1], x_vals.squeeze(), func_vals, grad_vals
 
 
 def newtons_method(x0, func, grad, hess, tol=1e-6, max_iter=1000):
@@ -179,7 +178,7 @@ def plot_2d(func, results):
     func : function
         Function to be minimized.
     results : list
-        List of results from gradient_descent() or newtons_method().
+        Results from gradient_descent() or newtons_method().
 
     Returns
     -------
@@ -188,31 +187,32 @@ def plot_2d(func, results):
     """
     # Plot set up
     fig, ax = plt.subplots(1, 3, figsize=(20, 5))
-    x_vals = np.linspace(*get_bounds(results, 0))
-    y_vals = np.linspace(*get_bounds(results, 1))
-    [X, Y] = np.meshgrid(x_vals, y_vals)
-    ax[0].contour(x_vals, y_vals, func(X, Y))
+    x_vals = np.linspace(*get_bounds(results))
+    X = np.meshgrid(x_vals, x_vals)
+    norm = plt.Normalize(np.min(func(X)), np.max(func(X)))
+
+    # Plot iterates
+    ax[0].contour(x_vals, x_vals, func(X))
+    ax[0].plot(results[1][0, :], results[1][1, :], '.')
     ax[0].set_xlabel('$x$')
     ax[0].set_ylabel('$y$')
-    ax[1].set_xlabel('Iteration')
-    ax[1].set_ylabel('Function Value')
-    ax[2].set_xlabel('Iteration')
-    ax[2].set_ylabel('Norm of Gradient')
-    norm = plt.Normalize(np.min(func(X, Y)), np.max(func(X, Y)))
     fig.colorbar(cm.ScalarMappable(norm=norm), label='$f(x, y)$', ax=ax[0])
 
-    # Plot results
-    for ii in range(len(results)):
-        ax[0].plot(results[ii][1][0, :], results[ii][1][1, :], '.')
-        ax[1].plot(results[ii][2])
-        ax[2].plot(results[ii][3])
-    plt.show()
+    # Plot function values
+    ax[1].plot(results[2])
+    ax[1].set_xlabel('Iteration')
+    ax[1].set_ylabel('Function Value')
+
+    # Plot norm of gradient values
+    ax[2].plot(results[3])
+    ax[2].set_xlabel('Iteration')
+    ax[2].set_ylabel('Norm of Gradient')
 
 
-def get_bounds(results, ii):
+def get_bounds(results):
     """Get upper and lower bounds for 2D plot."""
-    max_val = max([max(results[jj][1][ii]) for jj in range(len(results))])
-    min_val = min([min(results[jj][1][ii]) for jj in range(len(results))])
+    max_val = max(max(results[1][0]), max(results[1][1]))
+    min_val = min(min(results[1][0]), min(results[1][1]))
     bound = max(abs(max_val), abs(min_val))
     pad = bound/5
     return [-bound - pad, bound + pad]
