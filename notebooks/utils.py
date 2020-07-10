@@ -52,7 +52,7 @@ def gradient_descent(func, grad, x0, step, tol=1e-6, max_iter=1000):
 
         # Check convergence
         if grad_vals[ii] < tol:
-            print(f'Norm of gradient below tolerance after {ii} iteration(s).')
+            print(f'Converged after {ii} iteration(s).')
             return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
                    func_vals[:(ii + 1)], grad_vals[:(ii + 1)]
 
@@ -60,78 +60,15 @@ def gradient_descent(func, grad, x0, step, tol=1e-6, max_iter=1000):
     return x_vals[:, -1], x_vals.squeeze(), func_vals, grad_vals
 
 
-def newtons_method(x0, func, grad, hess, tol=1e-6, max_iter=1000):
-    """Minimize function with Newton's method.
-
-    Parameters
-    ----------
-    x0 : array
-        Starting point for solver.
-    func : function
-        Objective function to minimize.
-    grad : function
-        Gradient of objective function.
-    hess : function
-        Hessian of objective function.
-    tol : float, optional
-        Gradient tolerance for terminating solver.
-    max_iter : int, optional
-        Maximum number of iterations for solver.
-
-    Returns
-    -------
-    x : float
-        Function minimizer.
-    x_vals : array
-        Iterates.
-    func_vals : array
-        Function values at iterates.
-    grad_vals : array
-        Norm of gradient at iterates.
-    flag : int
-        0, norm of gradient below `tol`.
-        1, maximum number of iterations reached.
-
-    """
-    # Initialize return values
-    if type(x0) in (int, float):
-        x_vals = np.zeros((1, max_iter + 1))
-    else:
-        x_vals = np.zeros((len(x0), max_iter + 1))
-    x_vals[:, 0] = x0
-    func_vals = np.zeros(max_iter + 1)
-    func_vals[0] = func(x0)
-    grad_vals = np.zeros(max_iter + 1)
-    grad_vals[0] = np.linalg.norm(grad(x0))
-
-    # Minimize function
-    for ii in range(1, max_iter + 1):
-        H = hess(x_vals[:, ii - 1])
-        if type(H) in (int, float):
-            x_vals[:, ii] = x_vals[:, ii - 1] - grad(x_vals[:, ii - 1])/H
-        else:
-            x_vals[:, ii] = x_vals[:, ii - 1] - \
-                            np.linalg.solve(H, grad(x_vals[:, ii - 1]))
-        func_vals[ii] = func(x_vals[:, ii])
-        grad_vals[ii] = np.linalg.norm(grad(x_vals[:, ii]))
-
-        # Check convergence
-        if grad_vals[ii] < tol:
-            return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
-                   func_vals[:(ii + 1)], grad_vals[:(ii + 1)], 0
-
-    return x_vals[:, -1], x_vals.squeeze(), func_vals, grad_vals, 1
-
-
 def plot_1d(func, results):
-    """Plot 1D results from gradient_descent() or newtons_method().
+    """Plot 1D results from gradient_descent().
 
     Parameters
     ----------
     func : function
         Function to be minimized.
     results : list
-        Results from gradient_descent() or newtons_method().
+        Results from gradient_descent().
 
     Returns
     -------
@@ -171,14 +108,14 @@ def plot_1d(func, results):
 
 
 def plot_2d(func, results):
-    """Plot 2D results from gradient_descent() or newtons_method().
+    """Plot 2D results from gradient_descent().
 
     Parameters
     ----------
     func : function
         Function to be minimized.
     results : list
-        Results from gradient_descent() or newtons_method().
+        Results from gradient_descent().
 
     Returns
     -------
