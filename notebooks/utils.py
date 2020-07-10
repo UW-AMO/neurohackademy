@@ -142,10 +142,10 @@ def plot_1d(func, results):
     fig, ax = plt.subplots(1, 3, figsize=(20, 5))
     cmap = 'viridis_r'
     norm = plt.Normalize(0, len(results[1]) - 1)
-
-    # Plot iterates
     pad = (max(results[1]) - min(results[1]))/10
     x_vals = np.linspace(min(results[1]) - pad, max(results[1]) + pad)
+
+    # Plot iterates
     ax[0].plot(x_vals, func(x_vals))
     ax[0].scatter(results[1], results[2], c=np.arange(0, len(results[1])),
                   zorder=3, cmap=cmap, norm=norm)
