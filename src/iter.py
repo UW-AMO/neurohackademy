@@ -1,4 +1,4 @@
-"""Functions for gradient descent notebook."""
+"""Functions for iterative methods notebook."""
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
