@@ -115,7 +115,7 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
     x_vals = np.zeros((n, max_iter + 1))
     x_vals[:, 0] = np.random.randn(n)
     func_vals = np.zeros(max_iter + 1)
-    func_vals[0] = np.linalg.norm(A.dot(x_vals[:, 0]) - y)**2/m
+    func_vals[0] = np.linalg.norm(A.dot(x_vals[:, 0]) - y)**2/(2*m)
     func_diff = np.zeros(max_iter)
 
     # Minimize function
@@ -123,9 +123,9 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
     for ii in range(1, max_iter + 1):
         idx = np.random.randint(0, m, batch_size)
         res = A[idx, :].dot(x_vals[:, ii - 1]) - y[idx]
-        grad = 2/batch_size*np.transpose(A[idx, :]).dot(res)
+        grad = 1/batch_size*np.transpose(A[idx, :]).dot(res)
         x_vals[:, ii] = x_vals[:, ii - 1] - learning_rate*grad
-        func_vals[ii] = np.linalg.norm(A.dot(x_vals[:, ii]) - y)**2/m
+        func_vals[ii] = np.linalg.norm(A.dot(x_vals[:, ii]) - y)**2/(2*m)
         func_diff[ii - 1] = np.abs(func_vals[ii] - func_vals[ii - 1])
 
         # Check convergence
