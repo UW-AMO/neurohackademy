@@ -8,6 +8,8 @@ from matplotlib import cm
 def gradient_descent(func, grad, x0, step, tol=1e-6, max_iter=1000):
     """Minimize function with gradient descent.
 
+    Stopping condition based on size of the gradient.
+
     Parameters
     ----------
     func : function
@@ -71,11 +73,14 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
                        tol=1e-6, max_iter=1000, random_seed=1):
     """Solve linear least-squares with stochastic gradient descent.
 
+    Iterates are initialized as a random vector.
+    Stopping condition based on difference between iterates.
+
     Parameters
     ----------
-    A : numpy.ndarray
+    A : array
         Training data coefficient matrix.
-    y : numpy.ndarray
+    y : array
         Training data solution vector.
     learning_rate : float
         Initial learning rate for stochastic gradient descent.
@@ -134,7 +139,7 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
             print(f'Minimum function value: {min(func_vals[:(ii + 1)]):.2f}')
             print(f'Total time: {time() - start:.2f} secs')
             return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
-                   func_vals[:(ii + 1)], func_diff[:(ii + 1)]
+                   func_vals[:(ii + 1)], func_diff[:ii]
 
         # Update learning rate
         if decay is not None:
@@ -144,6 +149,84 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
     print(f'Minimum function value: {min(func_vals):.2f}')
     print(f'Total time: {time() - start:.2f} secs')
     return x_vals[:, -1], x_vals.squeeze(), func_vals, func_diff
+
+
+def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=1000,
+                 print_results=True):
+    """Solve Lasso problem with proximal gradient descent.
+
+    Iterates are initialized as a vector of zeros.
+    Stopping condition based on difference between iterates.
+
+    Parameters
+    ---------
+    A : numpy.ndarray
+        Training data coefficient matrix.
+    y : numpy.ndarray
+        Training data solution vector.
+    lam : float
+        Regularization parameter.
+    step : float, optional
+        Initial learning rate for stochastic gradient descent.
+    tol : float, optional
+        Difference between iterates tolerance for terminating solver.
+    max_iter : int, optional
+        Maximum number of iterations for solver.
+    print_results : bool, optional
+        If True, print convergence results.
+
+    Returns
+    -------
+    x : float
+        Function minimizer.
+    x_vals : array
+        Iterates.
+    func_vals : array
+        Function values at iterates.
+    func_diff : array
+        Difference between subsequent iterates.
+
+    """
+    # Initialize return values
+    m, n = A.shape
+    x_vals = np.zeros((n, max_iter + 1))
+    func_vals = np.zeros(max_iter + 1)
+    func_vals[0] = np.linalg.norm(A.dot(x_vals[:, 0]) - y)**2/2 + \
+                   lam*np.linalg.norm(x_vals[:, 0], 1)
+    func_diff = np.zeros(max_iter)
+
+    # Set step size
+    if step is None:
+        step = 1/(np.linalg.norm(np.transpose(A).dot(A)) + 2*lam*np.sqrt(m))
+
+    # Minimize function
+    start = time()
+    for ii in range(1, max_iter + 1):
+        grad = np.transpose(A).dot(A.dot(x_vals[:, ii - 1]) - y)
+        x_vals[:, ii] = _prox(x_vals[:, ii - 1] - step*grad, lam*step)
+        func_vals[ii] = np.linalg.norm(A.dot(x_vals[:, ii]) - y)**2/2 + \
+                        lam*np.linalg.norm(x_vals[:, ii], 1)
+        func_diff[ii - 1] = np.abs(func_vals[ii] - func_vals[ii - 1])
+
+        # Check convergence
+        if func_diff[ii - 1] < tol:
+            if print_results:
+                print(f'Converged after {ii} iteration(s).')
+                print(f'Minimum function value: {min(func_vals[:(ii + 1)]):.2f}')
+                print(f'Total time: {time() - start:.2f} secs')
+            return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
+                   func_vals[:(ii + 1)], func_diff[:ii]
+
+    if print_results:
+        print(f'Maximum number of iterations reached: {ii}.')
+        print(f'Minimum function value: {min(func_vals):.2f}')
+        print(f'Total time: {time() - start:.2f} secs')
+    return x_vals[:, -1], x_vals.squeeze(), func_vals, func_diff
+
+
+def _prox(x, lam):
+    """Evaluate soft thresholding operator."""
+    return np.maximum(x - lam, 0) - np.maximum(-x - lam, 0)
 
 
 def plot_1d(func, results):
@@ -264,3 +347,37 @@ def plot_sgd(results):
     ax[1].plot(np.arange(1, len(results[3]) + 1), results[3])
     ax[1].set_xlabel('Iteration ($k$)')
     ax[1].set_ylabel('$|f(x^k) - f(x^{k-1})|$')
+
+
+def plot_pgd(x_true, results):
+    """Plot results from prox_descent().
+
+    Parameters
+    ----------
+    x_true : array
+        True model parameter values.
+    results : list
+        Results from prox_descent().
+
+    Returns
+    -------
+    None.
+
+    """
+    # Plot function values
+    fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+    ax[0].plot(x_true, 'o')
+    ax[0].plot(results[0], '.')
+    ax[0].set_xlabel('Index ($i$)')
+    ax[0].set_ylabel('Model Parameter ($x_i$)')
+    plt.legend(['True', 'Estimated'])
+
+    # Plot function values
+    ax[1].plot(results[2])
+    ax[1].set_xlabel('Iteration ($k$)')
+    ax[1].set_ylabel('$f(x^k)$')
+
+    # Plot difference between function values
+    ax[2].plot(np.arange(1, len(results[3]) + 1), results[3])
+    ax[2].set_xlabel('Iteration ($k$)')
+    ax[2].set_ylabel('$|f(x^k) - f(x^{k-1})|$')
