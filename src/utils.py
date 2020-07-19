@@ -160,9 +160,9 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=1000,
 
     Parameters
     ---------
-    A : numpy.ndarray
+    A : array
         Training data coefficient matrix.
-    y : numpy.ndarray
+    y : darray
         Training data solution vector.
     lam : float
         Regularization parameter.
@@ -203,7 +203,7 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=1000,
     start = time()
     for ii in range(1, max_iter + 1):
         grad = np.transpose(A).dot(A.dot(x_vals[:, ii - 1]) - y)
-        x_vals[:, ii] = _prox(x_vals[:, ii - 1] - step*grad, lam*step)
+        x_vals[:, ii] = prox(x_vals[:, ii - 1] - step*grad, lam*step)
         func_vals[ii] = np.linalg.norm(A.dot(x_vals[:, ii]) - y)**2/2 + \
                         lam*np.linalg.norm(x_vals[:, ii], 1)
         func_diff[ii - 1] = np.abs(func_vals[ii] - func_vals[ii - 1])
@@ -224,7 +224,7 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=1000,
     return x_vals[:, -1], x_vals.squeeze(), func_vals, func_diff
 
 
-def _prox(x, lam):
+def prox(x, lam):
     """Evaluate soft thresholding operator."""
     return np.maximum(x - lam, 0) - np.maximum(-x - lam, 0)
 
@@ -370,7 +370,7 @@ def plot_pgd(x_true, results):
     ax[0].plot(results[0], '.')
     ax[0].set_xlabel('Index ($i$)')
     ax[0].set_ylabel('Model Parameter ($x_i$)')
-    plt.legend(['True', 'Estimated'])
+    ax[0].legend(['True', 'Estimated'])
 
     # Plot function values
     ax[1].plot(results[2])
@@ -381,3 +381,73 @@ def plot_pgd(x_true, results):
     ax[2].plot(np.arange(1, len(results[3]) + 1), results[3])
     ax[2].set_xlabel('Iteration ($k$)')
     ax[2].set_ylabel('$|f(x^k) - f(x^{k-1})|$')
+
+
+def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
+    """Plot Lasso results for different values of lambda.
+
+    Parameters
+    ---------
+    A : array
+        Training data coefficient matrix.
+    y : array
+        Training data solution vector.
+    x_true : array
+        True solution.
+    lam_vals : array
+        Regularization parameters.
+    step : float, optional
+        Initial learning rate for stochastic gradient descent.
+    tol : float, optional
+        Difference between iterates tolerance for terminating solver.
+    max_iter : int, optional
+        Maximum number of iterations for solver.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Solve Lasso problems
+    f_vals = np.zeros(len(lam_vals))
+    nonzeros = np.zeros(len(lam_vals))
+    x_vals = np.zeros((A.shape[1], len(lam_vals)))
+    for ii in range(len(lam_vals)):
+        results = prox_descent(A, y, lam_vals[ii], max_iter=10000,
+                                     print_results=False)
+        f_vals[ii] = results[2][-1]
+        nonzeros[ii] = np.count_nonzero(results[0])
+        x_vals[:, ii] = results[0]
+
+    # Plot function values
+    colors = cm.get_cmap('tab20')
+    fig, ax = plt.subplots(1, 3, figsize=(25, 5))
+    ax[0].semilogx(lam_vals, f_vals)
+    ax[0].set_xlabel('$\lambda$')
+    ax[0].set_ylabel('$f(x)$')
+
+    # Plot number of nonzero elements
+    ax[1].semilogx(lam_vals, nonzeros)
+    ax[1].semilogx(lam_vals, np.count_nonzero(x_true)*np.ones_like(lam_vals),
+                   '--', c=colors(0))
+    ax[1].set_xlabel('$\lambda$')
+    ax[1].set_ylabel('Number of Nonzeros in $x$')
+    ax[1].legend(labels=['True', 'Estimated'])
+
+    # Plot values of nonzero elements in solution
+    count = 0
+    for ii in np.nonzero(x_true)[0]:
+        if count == 0:
+            print(x_true[ii])
+            h1, = ax[2].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals),
+                                 '--', c=colors(count))
+            h2, = ax[2].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
+        else:
+            ax[2].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals), '--',
+                           c=colors(count))
+            ax[2].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
+        count += 1
+    ax[2].set_xlabel('$\lambda$')
+    ax[2].set_ylabel('Model Parameter ($x$)')
+    ax[2].legend(handles=[h1, h2], labels=['True', 'Estimated'],
+                 loc='upper right')
