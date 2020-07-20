@@ -151,7 +151,7 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
     return x_vals[:, -1], x_vals.squeeze(), func_vals, func_diff
 
 
-def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=1000,
+def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=10000,
                  print_results=True):
     """Solve Lasso problem with proximal gradient descent.
 
@@ -227,6 +227,16 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=1000,
 def prox(x, lam):
     """Evaluate soft thresholding operator."""
     return np.maximum(x - lam, 0) - np.maximum(-x - lam, 0)
+
+
+def g(x, a, b=None):
+    """Mystery function for Part 2 Example 2."""
+    if b is None:
+        b = np.arange(len(a))
+    y = np.zeros(len(x))
+    for ii in range(len(a)):
+        y += a[ii]*np.cos(b[ii]*x)
+    return y
 
 
 def plot_1d(func, results):
@@ -349,8 +359,8 @@ def plot_sgd(results):
     ax[1].set_ylabel('$|f(x^k) - f(x^{k-1})|$')
 
 
-def plot_pgd(x_true, results):
-    """Plot results from prox_descent().
+def plot_pgd1(A, x_true, y_true, results):
+    """Plot results from prox_descent() example 1.
 
     Parameters
     ----------
@@ -364,27 +374,66 @@ def plot_pgd(x_true, results):
     None.
 
     """
-    # Plot function values
-    fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+    # Plot parameter values
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
     ax[0].plot(x_true, 'o')
     ax[0].plot(results[0], '.')
     ax[0].set_xlabel('Index ($i$)')
     ax[0].set_ylabel('Model Parameter ($x_i$)')
     ax[0].legend(['True', 'Estimated'])
 
-    # Plot function values
-    ax[1].plot(results[2])
-    ax[1].set_xlabel('Iteration ($k$)')
-    ax[1].set_ylabel('$f(x^k)$')
-
-    # Plot difference between function values
-    ax[2].plot(np.arange(1, len(results[3]) + 1), results[3])
-    ax[2].set_xlabel('Iteration ($k$)')
-    ax[2].set_ylabel('$|f(x^k) - f(x^{k-1})|$')
+    # Plot estimates
+    ax[1].plot(y_true, A.dot(results[0]), '.')
+    ax[1].set_xlabel('True Output ($y_i$)')
+    ax[1].set_ylabel('Estimated Output ($a_i^Tx$)')
 
 
-def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
-    """Plot Lasso results for different values of lambda.
+def plot_pgd2(a, b, x_train, y_train, x_test, y_test, results):
+    """Plot results from prox_descent() example 2.
+
+    Parameters
+    ----------
+    a : array
+        Coefficient vector.
+    b : array
+        Frequency vector.
+    x_train : array
+        Training input.
+    y_train : array
+        Training output.
+    x_test : array
+        Test input.
+    y_test : array
+        Test output.
+    results : list
+        Results from prox_descent().
+
+    Returns
+    -------
+    None.
+
+    """
+    # Plot parameter values
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+    ax[0].plot(b, a, 'o')
+    ax[0].plot(results[0], '.')
+    ax[0].set_xlabel('Frequency ($b_i$)')
+    ax[0].set_ylabel('Coefficient ($a_i$)')
+    ax[0].legend(['True', 'Estimated'])
+
+    # Plot estimates
+    x_vals = np.linspace(0, 4, 1000)
+    ax[1].plot(x_vals, g(x_vals, a, b))
+    ax[1].plot(x_train, y_train, '.', markersize=10, zorder=3)
+    ax[1].plot(x_test, y_test, '.', markersize=10, zorder=3)
+    ax[1].plot(x_vals, g(x_vals, results[0]))
+    ax[1].set_xlabel('$x_i$')
+    ax[1].set_ylabel('$y_i$')
+    ax[1].legend(['$g(x)$', 'Train', 'Test', 'Model'])
+
+
+def plot_lam1(A, y, x_true, lam_vals):
+    """Plot Lasso results for different values of lambda (example 1).
 
     Parameters
     ---------
@@ -396,12 +445,6 @@ def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
         True solution.
     lam_vals : array
         Regularization parameters.
-    step : float, optional
-        Initial learning rate for stochastic gradient descent.
-    tol : float, optional
-        Difference between iterates tolerance for terminating solver.
-    max_iter : int, optional
-        Maximum number of iterations for solver.
 
     Returns
     -------
@@ -413,8 +456,7 @@ def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
     nonzeros = np.zeros(len(lam_vals))
     x_vals = np.zeros((A.shape[1], len(lam_vals)))
     for ii in range(len(lam_vals)):
-        results = prox_descent(A, y, lam_vals[ii], max_iter=10000,
-                                     print_results=False)
+        results = prox_descent(A, y, lam_vals[ii], print_results=False)
         f_vals[ii] = results[2][-1]
         nonzeros[ii] = np.count_nonzero(results[0])
         x_vals[:, ii] = results[0]
@@ -427,9 +469,9 @@ def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
     ax[0].set_ylabel('$f(x)$')
 
     # Plot number of nonzero elements
-    ax[1].semilogx(lam_vals, nonzeros)
     ax[1].semilogx(lam_vals, np.count_nonzero(x_true)*np.ones_like(lam_vals),
                    '--', c=colors(0))
+    ax[1].semilogx(lam_vals, nonzeros)
     ax[1].set_xlabel('$\lambda$')
     ax[1].set_ylabel('Number of Nonzeros in $x$')
     ax[1].legend(labels=['True', 'Estimated'])
@@ -438,7 +480,6 @@ def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
     count = 0
     for ii in np.nonzero(x_true)[0]:
         if count == 0:
-            print(x_true[ii])
             h1, = ax[2].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals),
                                  '--', c=colors(count))
             h2, = ax[2].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
@@ -448,6 +489,81 @@ def plot_lam(A, y, x_true, lam_vals, step=None, tol=1e-6, max_iter=1000):
             ax[2].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
         count += 1
     ax[2].set_xlabel('$\lambda$')
-    ax[2].set_ylabel('Model Parameter ($x$)')
-    ax[2].legend(handles=[h1, h2], labels=['True', 'Estimated'],
-                 loc='upper right')
+    ax[2].set_ylabel('Model Parameter ($x_i$)')
+    ax[2].legend(handles=[h1, h2], labels=['True', 'Estimated'])
+
+
+def plot_lam2(D, a, b, x_train, y_train, x_test, y_test, lam_vals):
+    """Plot Lasso results for different values of lambda (example 2).
+
+    Parameters
+    ---------
+    D : array
+        Training data coefficient matrix.
+    y : array
+        Training data solution vector.
+    a : array
+        True coefficient vector.
+    b : array
+        True frequency vector.
+    x_train : array
+        Training input.
+    y_train : array
+        Training output.
+    x_test : array
+        Test input.
+    y_test : array
+        Test output.    
+    lam_vals : array
+        Regularization parameters.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Solve Lasso problems
+    f_train = np.zeros(len(lam_vals))
+    f_test = np.zeros(len(lam_vals))
+    nonzeros = np.zeros(len(lam_vals))
+    a_vals = np.zeros((D.shape[1], len(lam_vals)))
+    for ii in range(len(lam_vals)):
+        results = prox_descent(D, y_train, lam_vals[ii], print_results=False)
+        f_train[ii] = results[2][-1]
+        f_test[ii] = np.linalg.norm(g(x_test, results[0]) - y_test)**2/2 \
+                     + lam_vals[ii]*np.linalg.norm(results[0], 1)
+        nonzeros[ii] = np.count_nonzero(results[0])
+        a_vals[:, ii] = results[0]
+
+    # Plot function values
+    colors = cm.get_cmap('tab20')
+    fig, ax = plt.subplots(1, 3, figsize=(25, 5))
+    ax[0].semilogx(lam_vals, f_train)
+    ax[0].semilogx(lam_vals, f_test)
+    ax[0].set_xlabel('$\lambda$')
+    ax[0].set_ylabel('$f(x)$')
+    ax[0].legend(['Train', 'Test'])
+
+    # Plot number of nonzero elements
+    ax[1].semilogx(lam_vals, len(a)*np.ones_like(lam_vals),
+                   '--', c=colors(0))
+    ax[1].semilogx(lam_vals, nonzeros)
+    ax[1].set_xlabel('$\lambda$')
+    ax[1].set_ylabel('Number of Terms')
+    ax[1].legend(labels=['True', 'Estimated'])
+
+    # Plot values of nonzero elements in solution
+    count = 0
+    for ii in range(len(a)):
+        if count == 0:
+            h1, = ax[2].semilogx(lam_vals, a[ii]*np.ones_like(lam_vals),
+                                 '--', c=colors(count))
+            h2, = ax[2].semilogx(lam_vals, a_vals[b[ii], :], c=colors(count))
+        else:
+            ax[2].semilogx(lam_vals, a[ii]*np.ones_like(lam_vals), '--',
+                           c=colors(count))
+            ax[2].semilogx(lam_vals, a_vals[b[ii], :], c=colors(count))
+        count += 1
+    ax[2].set_xlabel('$\lambda$')
+    ax[2].set_ylabel('Model Parameter ($a_i$)')
+    ax[2].legend(handles=[h1, h2], labels=['True', 'Estimated'])
