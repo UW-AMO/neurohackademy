@@ -774,6 +774,7 @@ class BinaryImageClassifier:
         """plot the classifier for fun"""
         classifier = self.classifier.reshape(self.image_shape)
         plt.imshow(classifier)
+        plt.axis('off')
 
 
 def sizes_to_slices(sizes):
