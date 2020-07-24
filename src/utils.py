@@ -66,7 +66,7 @@ def gradient_descent(func, grad, x0, step, tol=1e-6, max_iter=1000):
             print(f'Minimum function value: {min(func_vals[:(ii + 1)]):.2f}')
             print(f'Total time: {time() - start:.2f} secs')
             return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
-                   func_vals[:(ii + 1)], grad_vals[:(ii + 1)]
+                func_vals[:(ii + 1)], grad_vals[:(ii + 1)]
 
     print(f'Maximum number of iterations reached: {ii}.')
     print(f'Minimum function value: {min(func_vals[:(ii + 1)]):.2f}')
@@ -239,7 +239,7 @@ def stochastic_descent(A, y, learning_rate, decay=None, batch_size=1,
             print(f'Minimum function value: {min(func_vals[:(ii + 1)]):.2f}')
             print(f'Total time: {time() - start:.2f} secs')
             return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
-                   func_vals[:(ii + 1)], func_diff[:ii]
+                func_vals[:(ii + 1)], func_diff[:ii]
 
         # Update learning rate
         if decay is not None:
@@ -320,7 +320,7 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=10000,
     x_vals = np.zeros((n, max_iter + 1))
     func_vals = np.zeros(max_iter + 1)
     func_vals[0] = np.linalg.norm(A.dot(x_vals[:, 0]) - y)**2/2 + \
-                   lam*np.linalg.norm(x_vals[:, 0], 1)
+        lam*np.linalg.norm(x_vals[:, 0], 1)
     func_diff = np.zeros(max_iter)
 
     # Set step size
@@ -333,7 +333,7 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=10000,
         grad = np.transpose(A).dot(A.dot(x_vals[:, ii - 1]) - y)
         x_vals[:, ii] = prox(x_vals[:, ii - 1] - step*grad, lam*step)
         func_vals[ii] = np.linalg.norm(A.dot(x_vals[:, ii]) - y)**2/2 + \
-                        lam*np.linalg.norm(x_vals[:, ii], 1)
+            lam*np.linalg.norm(x_vals[:, ii], 1)
         func_diff[ii - 1] = np.abs(func_vals[ii] - func_vals[ii - 1])
 
         # Check convergence
@@ -343,7 +343,7 @@ def prox_descent(A, y, lam, step=None, tol=1e-6, max_iter=10000,
                 print(f'Minimum function value: {min(func_vals[:(ii + 1)]):.2f}')
                 print(f'Total time: {time() - start:.2f} secs')
             return x_vals[:, ii], x_vals[:, :(ii + 1)].squeeze(), \
-                   func_vals[:(ii + 1)], func_diff[:ii]
+                func_vals[:(ii + 1)], func_diff[:ii]
 
     if print_results:
         print(f'Maximum number of iterations reached: {ii}.')
@@ -521,7 +521,7 @@ def plot_lam2(D, a, b, x_train, y_train, x_test, y_test, lam_vals):
     x_test : array
         Test input.
     y_test : array
-        Test output.    
+        Test output.
     lam_vals : array
         Regularization parameters.
 
@@ -539,7 +539,7 @@ def plot_lam2(D, a, b, x_train, y_train, x_test, y_test, lam_vals):
         results = prox_descent(D, y_train, lam_vals[ii], print_results=False)
         f_train[ii] = results[2][-1]
         f_test[ii] = np.linalg.norm(g(x_test, results[0]) - y_test)**2/2 \
-                     + lam_vals[ii]*np.linalg.norm(results[0], 1)
+            + lam_vals[ii]*np.linalg.norm(results[0], 1)
         nonzeros[ii] = np.count_nonzero(results[0])
         a_vals[:, ii] = results[0]
 
@@ -622,7 +622,7 @@ class BinaryLogisticRegression:
     def hessian(self, x):
         """hessian function"""
         r = self.y*self.A.dot(x)
-        hess = (self.A.T*(self.w*np.exp(r)/
+        hess = (self.A.T*(self.w*np.exp(r) /
                           (1.0 + np.exp(r))**2)).dot(self.A)/self.h
         hess += self.lam*np.eye(self.k)
         return hess
@@ -903,6 +903,3 @@ def plot_mnist(results):
     ax[2].plot(results[3])
     ax[2].set_xlabel('Iteration ($k$)')
     ax[2].set_ylabel(r'$||\nabla f(x^k)||$')
-
-
-
