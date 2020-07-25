@@ -415,36 +415,35 @@ def plot_lam1(A, y, x_true, lam_vals):
         nonzeros[ii] = np.count_nonzero(results[0])
         x_vals[:, ii] = results[0]
 
-    # Plot function values
-    colors = cm.get_cmap('tab20')
-    fig, ax = plt.subplots(1, 3, figsize=(25, 5))
-    ax[0].semilogx(lam_vals, f_vals)
-    ax[0].set_xlabel('$\lambda$')
+    # Plot function values vs. number of nonzero elements
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+    cmap = cm.get_cmap('viridis_r', len(lam_vals[1:-1]))
+    norm = plt.Normalize(min(np.log10(lam_vals[1:-1])),
+                         max(np.log10(lam_vals[1:-1])))
+    ax[0].plot(nonzeros, f_vals)
+    ax[0].scatter(nonzeros[1:-1], f_vals[1:-1], c=np.log10(lam_vals[1:-1]),
+                  zorder=3, cmap=cmap, norm=norm)
+    ax[0].set_xlabel('Number of Nonzeros in $x$')
     ax[0].set_ylabel('$f(x)$')
-
-    # Plot number of nonzero elements
-    ax[1].semilogx(lam_vals, np.count_nonzero(x_true)*np.ones_like(lam_vals),
-                   '--', c=colors(0))
-    ax[1].semilogx(lam_vals, nonzeros)
-    ax[1].set_xlabel('$\lambda$')
-    ax[1].set_ylabel('Number of Nonzeros in $x$')
-    ax[1].legend(labels=['True', 'Estimated'])
+    fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm),
+                 label='$\lambda = 10^p$', ax=ax[0])
 
     # Plot values of nonzero elements in solution
     count = 0
+    colors = cm.get_cmap('tab20')
     for ii in np.nonzero(x_true)[0]:
         if count == 0:
-            h1, = ax[2].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals),
+            h1, = ax[1].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals),
                                  '--', c=colors(count))
-            h2, = ax[2].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
+            h2, = ax[1].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
         else:
-            ax[2].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals), '--',
+            ax[1].semilogx(lam_vals, x_true[ii]*np.ones_like(lam_vals), '--',
                            c=colors(count))
-            ax[2].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
+            ax[1].semilogx(lam_vals, x_vals[ii, :], c=colors(count))
         count += 1
-    ax[2].set_xlabel('$\lambda$')
-    ax[2].set_ylabel('Model Parameter ($x_i$)')
-    ax[2].legend(handles=[h1, h2], labels=['True', 'Estimated'])
+    ax[1].set_xlabel('$\lambda$')
+    ax[1].set_ylabel('Model Parameter ($x_i$)')
+    ax[1].legend(handles=[h1, h2], labels=['True', 'Estimated'])
 
 
 def g(x, a, b=None):
@@ -543,38 +542,40 @@ def plot_lam2(D, a, b, x_train, y_train, x_test, y_test, lam_vals):
         nonzeros[ii] = np.count_nonzero(results[0])
         a_vals[:, ii] = results[0]
 
-    # Plot function values
-    colors = cm.get_cmap('tab20')
-    fig, ax = plt.subplots(1, 3, figsize=(25, 5))
-    ax[0].semilogx(lam_vals, f_train)
-    ax[0].semilogx(lam_vals, f_test)
-    ax[0].set_xlabel('$\lambda$')
+    # Plot function values vs. number of nonzero elements
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+    cmap = cm.get_cmap('viridis_r', len(lam_vals[1:-1]))
+    norm = plt.Normalize(min(np.log10(lam_vals[1:-1])),
+                         max(np.log10(lam_vals[1:-1])))
+    ax[0].plot(nonzeros, f_train)
+    ax[0].plot(nonzeros, f_test)
+    ax[0].scatter(nonzeros[1:-1], f_train[1:-1], c=np.log10(lam_vals[1:-1]),
+                  zorder=3, cmap=cmap, norm=norm)
+    ax[0].scatter(nonzeros[1:-1], f_test[1:-1], c=np.log10(lam_vals[1:-1]),
+                  zorder=3, cmap=cmap, norm=norm)
+    ax[0].set_xlabel('Number of Nonzeros in $x$')
     ax[0].set_ylabel('$f(x)$')
     ax[0].legend(['Train', 'Test'])
-
-    # Plot number of nonzero elements
-    ax[1].semilogx(lam_vals, len(a)*np.ones_like(lam_vals),
-                   '--', c=colors(0))
-    ax[1].semilogx(lam_vals, nonzeros)
-    ax[1].set_xlabel('$\lambda$')
-    ax[1].set_ylabel('Number of Terms')
-    ax[1].legend(labels=['True', 'Estimated'])
+    fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm),
+                 label='$\lambda = 10^p$', ax=ax[0],
+                 ticks=np.log10(lam_vals[1:-1]))
 
     # Plot values of nonzero elements in solution
     count = 0
+    colors = cm.get_cmap('tab10')
     for ii in range(len(a)):
         if count == 0:
-            h1, = ax[2].semilogx(lam_vals, a[ii]*np.ones_like(lam_vals),
+            h1, = ax[1].semilogx(lam_vals, a[ii]*np.ones_like(lam_vals),
                                  '--', c=colors(count))
-            h2, = ax[2].semilogx(lam_vals, a_vals[b[ii], :], c=colors(count))
+            h2, = ax[1].semilogx(lam_vals, a_vals[b[ii], :], c=colors(count))
         else:
-            ax[2].semilogx(lam_vals, a[ii]*np.ones_like(lam_vals), '--',
+            ax[1].semilogx(lam_vals, a[ii]*np.ones_like(lam_vals), '--',
                            c=colors(count))
-            ax[2].semilogx(lam_vals, a_vals[b[ii], :], c=colors(count))
+            ax[1].semilogx(lam_vals, a_vals[b[ii], :], c=colors(count))
         count += 1
-    ax[2].set_xlabel('$\lambda$')
-    ax[2].set_ylabel('Model Parameter ($a_i$)')
-    ax[2].legend(handles=[h1, h2], labels=['True', 'Estimated'])
+    ax[1].set_xlabel('$\lambda$')
+    ax[1].set_ylabel('Model Parameter ($a_i$)')
+    ax[1].legend(handles=[h1, h2], labels=['True', 'Estimated'])
 
 
 # Part 4 - Logistic Regression
